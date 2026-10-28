@@ -107,6 +107,12 @@ export JAVA_HOME=~/Library/Java/JavaVirtualMachines/jbr-17.0.14/Contents/Home
 ~/.gradle/wrapper/dists/gradle-8.13-all/*/gradle-8.13/bin/gradle :app:assembleRelease
 ```
 
+Release 构建默认开启 **R8 混淆 + 资源压缩**（`minifyEnabled true` / `shrinkResources true`）：
+
+- 入口类 `com.byxiaopeng.dytiao.AdSkipModule` 用 `-keep` 保留（`assets/xposed_init` 里按名字反射加载）；
+- 其余类全部 `-repackageclasses 'o'` 打散成 `o.a`~`o.k` 这种短名，方法名也重命名；
+- 混淆后 dex 从 ~23KB 降到 ~18KB，逻辑不变。
+
 ## 六、调参（`Config.java`）
 
 | 常量 | 默认 | 说明 |
