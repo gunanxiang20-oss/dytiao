@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        google()
+        mavenCentral()
+        // 传统 Xposed API stub
+        maven { url 'https://api.xposed.info/' }
+    }
+}
+rootProject.name = "DouyinAdSkip"
+include ':app'

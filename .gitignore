@@ -1,0 +1,14 @@
+# Gradle / build
+.gradle/
+build/
+app/build/
+local.properties
+
+# 备份的抖音安装包（体积大，不入库）
+backup/
+*.apk
+
+# IDE
+.idea/
+*.iml
+.DS_Store
