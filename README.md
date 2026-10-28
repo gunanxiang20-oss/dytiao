@@ -5,7 +5,9 @@
 1. **小游戏激励视频秒过并照常发奖**：广告弹出后约 1 秒自动关闭，奖励正常到账；
 2. **小程序页面内广告组件隐藏**：`<ad>` banner / 原生 / 抽奖，连带占位块一起收掉。
 
-产物：`DouyinMiniAppAdSkip-2.2.apk`（debug 签名，包名 `com.byxiaopeng.dytiao`）
+产物：`release/DouyinMiniAppAdSkip-2.2.apk`（debug 签名，包名 `com.byxiaopeng.dytiao`）
+
+仓库：https://github.com/gunanxiang20-oss/dytiao
 
 ---
 
