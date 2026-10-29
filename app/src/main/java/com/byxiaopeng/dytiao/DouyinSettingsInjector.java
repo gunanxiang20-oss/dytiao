@@ -273,7 +273,7 @@ final class DouyinSettingsInjector {
                     LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
             TextView version = new TextView(ctx);
-            version.setText("版本 2.2 · byxiaopeng");
+            version.setText("版本 2.3 · byxiaopeng");
             version.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
             version.setTextColor(themeColor(ctx, android.R.attr.textColorSecondary));
             version.setPadding(0, dp(ctx, 10), 0, 0);

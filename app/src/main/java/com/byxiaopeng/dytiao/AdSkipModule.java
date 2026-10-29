@@ -40,8 +40,13 @@ public class AdSkipModule implements IXposedHookLoadPackage {
 
     private static final String CLS_REWARD_FRAGMENT =
             "com.ss.android.excitingvideo.sdk.RewardAdNativeFragment";
-    private static final String CLS_GAME_AD_STATE = "X.0jyj";
-    private static final String CLS_GAME_AD_MODEL = "X.0jsw";
+    /**
+     * 小游戏广告模型类（负责把 close 事件发给 JS）在不同抖音版本里混淆名不同：
+     *   40.6.0 -> X.0jsw
+     *   40.9.0 -> X.0XOk
+     * 按顺序尝试，命中一个即可。
+     */
+    private static final String[] CLS_GAME_AD_MODELS = {"X.0XOk", "X.0jsw"};
     private static final String CLS_MINIAPP_AD_LISTENER = "X.0jye";
     private static final String CLS_MINIAPP_AD_STATE = "X.0jyd";
     private static final String CLS_EV_FRAGMENT =
@@ -91,7 +96,6 @@ public class AdSkipModule implements IXposedHookLoadPackage {
         if (Config.SKIP_REWARD_VIDEO) {
             hookExcitingVideoFragment();
             hookGameAdEvent();
-            hookManualClosePatch();
             hookRewardFragment(CLS_REWARD_FRAGMENT, "zM");
             if (Config.SKIP_DRAW_REWARD) {
                 hookRewardFragment(CLS_DRAW_FRAGMENT, "zM");
@@ -238,69 +242,44 @@ public class AdSkipModule implements IXposedHookLoadPackage {
      * 小游戏 JS 判断「看完」用的是 payload 里的字段，这里把 isEnded/count 一次性补全。
      */
     private void hookGameAdEvent() {
-        Class<?> cls = XposedHelpers.findClassIfExists(CLS_GAME_AD_MODEL, sClassLoader);
-        if (cls == null) {
-            log("game ad model not found: " + CLS_GAME_AD_MODEL);
-            return;
-        }
-        try {
-            XposedBridge.hookAllMethods(cls, "LIZIZ", new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) {
-                    Object[] args = param.args;
-                    if (args == null || args.length < 2) {
-                        return;
-                    }
-                    Object event = args[0];
-                    Object payload = args[1];
-                    if (!(payload instanceof org.json.JSONObject)) {
-                        return;
-                    }
-                    org.json.JSONObject json = (org.json.JSONObject) payload;
-                    if ("close".equals(event)) {
-                        try {
-                            json.put("isEnded", true);
-                            if (json.optInt("count", 0) < 1) {
-                                json.put("count", 1);
+        for (final String className : CLS_GAME_AD_MODELS) {
+            Class<?> cls = XposedHelpers.findClassIfExists(className, sClassLoader);
+            if (cls == null) {
+                log("game ad model not found: " + className);
+                continue;
+            }
+            try {
+                XposedBridge.hookAllMethods(cls, "LIZIZ", new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) {
+                        Object[] args = param.args;
+                        if (args == null || args.length < 2) {
+                            return;
+                        }
+                        Object event = args[0];
+                        Object payload = args[1];
+                        if (!(payload instanceof org.json.JSONObject)) {
+                            return;
+                        }
+                        org.json.JSONObject json = (org.json.JSONObject) payload;
+                        if ("close".equals(event)) {
+                            try {
+                                json.put("isEnded", true);
+                                if (json.optInt("count", 0) < 1) {
+                                    json.put("count", 1);
+                                }
+                                log("game close payload patched(" + className + "): " + json);
+                            } catch (Throwable t) {
+                                log("patch game close failed: " + t);
                             }
-                            log("game close payload patched: " + json);
-                        } catch (Throwable t) {
-                            log("patch game close failed: " + t);
                         }
                     }
-                }
-            });
-            log("hooked " + CLS_GAME_AD_MODEL + "#LIZIZ");
-        } catch (Throwable t) {
-            log("hook game ad event failed: " + t);
-        }
-    }
-
-    /**
-     * 「模块代跳」模式：用户自己点广告的关闭按钮时，SDK 会走自己的 onDestroy 发 close 事件。
-     * 在 X.0jyj#onDestroy 之前把 completeCount 补成 1，事件里就带 count=1，奖励照发。
-     */
-    private void hookManualClosePatch() {
-        Class<?> cls = XposedHelpers.findClassIfExists(CLS_GAME_AD_STATE, sClassLoader);
-        if (cls == null) {
-            log("game ad state class not found: " + CLS_GAME_AD_STATE);
-            return;
-        }
-        try {
-            XposedBridge.hookAllMethods(cls, "onDestroy", new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) {
-                    if (!Prefs.enabled()) {
-                        return;
-                    }
-                    if (patchGameState(param.thisObject, false)) {
-                        log("manual close: count patched before close event");
-                    }
-                }
-            });
-            log("hooked " + CLS_GAME_AD_STATE + "#onDestroy (manual close patch)");
-        } catch (Throwable t) {
-            log("hook manual close failed: " + t);
+                });
+                log("hooked " + className + "#LIZIZ");
+            } catch (Throwable t) {
+                log("hook game ad event failed(" + className + "): " + t);
+            }
+            break;
         }
     }
 
